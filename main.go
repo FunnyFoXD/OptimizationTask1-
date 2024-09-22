@@ -15,7 +15,6 @@ func Solution(objCoeff [][]float64, constCoeff, vectorCoeff []float64) {
 
 func main() {
 	var n, m int
-
 	_, err := fmt.Scan(&n, &m)
 	if err != nil {
 		fmt.Println("Wrong input")
