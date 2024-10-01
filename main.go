@@ -6,6 +6,7 @@ import (
 
 var eps float64 = 0.001
 
+
 func Solution(table [][]float64, n, m int) [][]float64 {
 	var pivotElement float64
 	var minimumRatio float64 = 1e10
@@ -13,52 +14,67 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 	var minimumIndex, minimumRatioIndex int
 	var flag bool = true
 	var count int = 0
+
 	for flag {
+		// Step 1: Найти минимальный элемент в строке целевой функции (по Z)
 		minimum = 1e10
-		for i := 1; i < n+m+2; i++ {
+		for i := 1; i < n+m+1; i++ {
 			if table[m][i] < minimum {
 				minimum = table[m][i]
 				minimumIndex = i
 			}
-
 		}
 
+		// Если минимальное значение больше или равно нулю, завершить
 		if minimum >= 0 {
 			fmt.Println("Done")
-			return table // Answer
+			return table
 		}
 
-		for i := 0; i < m+1; i++ {
-			table[i][n+m+2] = table[i][n+m+1] / table[i][minimumIndex]
-			if table[i][n+m+2] < minimumRatio && table[i][n+m+2] > 0 {
-				minimumRatio = table[i][n+m+2]
-				minimumRatioIndex = i
-			}
-		}
-
-		pivotElement = table[minimumRatioIndex][minimumIndex]
-
-		for i := 0; i < m+1; i++ {
-			for j := 1; j < m+n+2; j++ {
-				if i != minimumRatioIndex {
-					table[i][j] = table[minimumRatioIndex][j]/pivotElement*(-table[i][minimumIndex]) + table[i][j]
+		// Step 2: Найти строку с минимальным положительным отношением
+		minimumRatio = 1e10
+		for i := 0; i < m; i++ {
+			if table[i][minimumIndex] > 0 { // Мы можем делить только на положительные значения
+				ratio := table[i][n+m+1] / table[i][minimumIndex]
+				if ratio < minimumRatio {
+					minimumRatio = ratio
+					minimumRatioIndex = i
 				}
 			}
 		}
 
-		for i := 1; i < m+n+2; i++ {
-			table[minimumRatioIndex][i] = table[minimumRatioIndex][i] / pivotElement
+		// Step 3: Найти разрешающий элемент
+		pivotElement = table[minimumRatioIndex][minimumIndex]
+
+		// Step 4: Обновляем таблицу
+
+		// 1. Нормализуем разрешающую строку (чтобы разрешающий элемент стал 1):
+		for i := 1; i < n+m+2; i++ {
+			table[minimumRatioIndex][i] /= pivotElement
 		}
-		count += 1
-		fmt.Println("Table change ", count)
-		for i := 0; i < m + 1; i++ {
+
+		// 2. Обновляем строки, кроме разрешающей:
+		for i := 0; i < m+1; i++ {
+			if i != minimumRatioIndex { // Не трогаем разрешающую строку
+				factor := table[i][minimumIndex] // элемент, который должен стать 0
+				for j := 1; j < n+m+2; j++ {
+					table[i][j] -= factor * table[minimumRatioIndex][j]
+				}
+			}
+		}
+
+
+		// Вывести текущую таблицу для отладки
+		count++
+		fmt.Printf("Iteration %d\n", count)
+		for i := 0; i < m+1; i++ {
 			for j := 1; j < n+m+3; j++ {
-				fmt.Print(table[i][j], " ")
-			}	
+				fmt.Printf("%f ", table[i][j])
+			}
+			fmt.Println()
 		}
 		fmt.Println()
 	}
-
 	return table
 }
 
@@ -151,9 +167,11 @@ func main() {
 		}
 	}
 	fmt.Println()
+
 	table = Solution(table, n, m)
 
-	fmt.Println("Solution: ", table[m][n+m+1])
+	fmt.Println("Solution:", table[m][n+m+1])
+	
 	for i := 0; i < m; i++ {
 		fmt.Println(table[i][n+m+1])
 	}
