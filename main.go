@@ -13,7 +13,7 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 	var minimum float64 = 1e10
 	var minimumIndex, minimumRatioIndex int
 	var flag bool = true
-	var count int = 0
+	// var count int = 0
 
 	for flag {
 		// Step 1: Найти минимальный элемент в строке целевой функции (по Z)
@@ -27,7 +27,6 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 
 		// Если минимальное значение больше или равно нулю, завершить
 		if minimum >= 0 {
-			fmt.Println("Done")
 			return table
 		}
 
@@ -46,34 +45,40 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 		// Step 3: Найти разрешающий элемент
 		pivotElement = table[minimumRatioIndex][minimumIndex]
 
+		if minimumIndex <= n {
+			table[minimumRatioIndex][0] = float64(minimumIndex)
+		} else {
+			table[minimumRatioIndex][0] = float64(-(minimumIndex - n))
+		}
+	
 		// Step 4: Обновляем таблицу
 
-		// 1. Нормализуем разрешающую строку (чтобы разрешающий элемент стал 1):
-		for i := 1; i < n+m+2; i++ {
-			table[minimumRatioIndex][i] /= pivotElement
-		}
-
-		// 2. Обновляем строки, кроме разрешающей:
+		// 1. Обновляем строки, кроме разрешающей:
 		for i := 0; i < m+1; i++ {
 			if i != minimumRatioIndex { // Не трогаем разрешающую строку
 				factor := table[i][minimumIndex] // элемент, который должен стать 0
 				for j := 1; j < n+m+2; j++ {
-					table[i][j] -= factor * table[minimumRatioIndex][j]
+					table[i][j] -= factor * table[minimumRatioIndex][j]/pivotElement
 				}
 			}
 		}
 
-
-		// Вывести текущую таблицу для отладки
-		count++
-		fmt.Printf("Iteration %d\n", count)
-		for i := 0; i < m+1; i++ {
-			for j := 1; j < n+m+3; j++ {
-				fmt.Printf("%f ", table[i][j])
-			}
-			fmt.Println()
+		// 2. Нормализуем разрешающую строку (чтобы разрешающий элемент стал 1):
+		for i := 1; i < n+m+2; i++ {
+			table[minimumRatioIndex][i] /= pivotElement
 		}
-		fmt.Println()
+
+
+		// // Вывести текущую таблицу для отладки
+		// count++
+		// fmt.Printf("Iteration %d\n", count)
+		// for i := 0; i < m+1; i++ {
+		// 	for j := 1; j < n+m+3; j++ {
+		// 		fmt.Printf("%f ", table[i][j])
+		// 	}
+		// 	fmt.Println()
+		// }
+		// fmt.Println()
 	}
 	return table
 }
@@ -154,32 +159,46 @@ func main() {
 				} else {
 					table[i][j] = float64(0)
 				}
-			} else if i == m && j > n { // work with s1, s2 .. and rhz of z
+			} else if i == m && j > n { // work with s1, s2 .. and rhs of z
 				table[i][j] = float64(0)
 			}
 		}
 	}
 
-	fmt.Println("Initial table:")
-	for i := 0; i < m + 1; i++ {
-		for j := 1; j < n+m+3; j++ {
-			fmt.Print(table[i][j], " ")
-		}
+	// fmt.Println("Initial table:")
+	// for i := 0; i < m + 1; i++ {
+	// 	for j := 1; j < n+m+3; j++ {
+	// 		fmt.Print(table[i][j], " ")
+	// 	}
+	// }
+	// fmt.Println()
+
+	solVars := make([]float64, n)
+	for i := 0; i < n; i++ {
+		solVars[i] = 0
 	}
-	fmt.Println()
 
 	table = Solution(table, n, m)
 
-	fmt.Println("Solution:", table[m][n+m+1])
-	
 	for i := 0; i < m; i++ {
-		fmt.Println(table[i][n+m+1])
-	}
-
-	fmt.Println("Table after last change")
-	for i := 0; i < m; i++ {
-		for j := 1; j < n+m+3; j++ {
-			fmt.Print(table[i][j], " ")
+		if table[i][0] > 0 {
+			solVars[int(table[i][0] - 1)] = table[i][n+m+1]
 		}
 	}
+	fmt.Print("Solution variables: ")
+	for i := 0; i < n; i++ {
+		fmt.Print(solVars[i], " ")
+	}
+
+	fmt.Println()
+
+	fmt.Println("Maximum value of the objective function:", table[m][n+m+1])
+
+
+	// fmt.Println("Table after last change")
+	// for i := 0; i < m; i++ {
+	// 	for j := 0; j < n+m+3; j++ {
+	// 		fmt.Print(table[i][j], " ")
+	// 	}
+	// }
 }
