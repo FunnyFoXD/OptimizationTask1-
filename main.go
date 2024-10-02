@@ -5,13 +5,13 @@ import (
 	"math"
 )
 
-
-func Solution(table [][]float64, n, m int) [][]float64 {
+func Solution(table [][]float64, n, m int, approx float64) [][]float64 {
 	var pivotElement float64
 	var minimumRatio float64 = 1e10
 	var minimum float64 = 1e10
 	var minimumIndex, minimumRatioIndex int
 	var flag bool = true
+	var prevSol float64 = 1e10
 
 	for flag {
 		// Finding minimum element by z row
@@ -23,7 +23,7 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 			}
 		}
 
-		// Checking minimum value, if it's great or equal to 0, 
+		// Checking minimum value, if it's great or equal to 0,
 		// then there are no negative values in z row, we can finish
 		if minimum >= 0 {
 			return table
@@ -44,22 +44,21 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 		// Finding pivot element
 		pivotElement = table[minimumRatioIndex][minimumIndex]
 
-
 		// Changing indexes while moving variables
 		if minimumIndex <= n {
 			table[minimumRatioIndex][0] = float64(minimumIndex)
 		} else {
 			table[minimumRatioIndex][0] = float64(-(minimumIndex - n))
 		}
-	
+
 		// Change table
 
 		// Change all rows, except pivot row
 		for i := 0; i < m+1; i++ {
-			if i != minimumRatioIndex { 
+			if i != minimumRatioIndex {
 				factor := table[i][minimumIndex] // element in the pivot column
 				for j := 1; j < n+m+2; j++ {
-					table[i][j] -= factor * table[minimumRatioIndex][j]/pivotElement
+					table[i][j] -= factor * table[minimumRatioIndex][j] / pivotElement
 				}
 			}
 		}
@@ -69,7 +68,13 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 			table[minimumRatioIndex][i] /= pivotElement
 		}
 
+		// If solution changes by smaller value than approximation
+		if (math.Abs(prevSol - table[m][n+m+1])) < approx {
+			return table
+		}
+		prevSol = table[m][n+m+1]
 	}
+
 	return table
 }
 
@@ -136,9 +141,6 @@ func main() {
 		return
 	}
 
-	
-	precision := int(math.Log10(1 / approx))
-
 	// Fullfiling indexes of the table
 	for i := 0; i < m+1; i++ {
 		if i != m {
@@ -170,27 +172,24 @@ func main() {
 		}
 	}
 
-
 	solVars := make([]float64, n)
 	for i := 0; i < n; i++ {
 		solVars[i] = 0
 	}
 
-	table = Solution(table, n, m)
+	table = Solution(table, n, m, approx)
 
 	for i := 0; i < m; i++ {
 		if table[i][0] > 0 {
-			solVars[int(table[i][0] - 1)] = table[i][n+m+1]
+			solVars[int(table[i][0]-1)] = table[i][n+m+1]
 		}
 	}
 	fmt.Print("Decision variables: ")
 	for i := 0; i < n; i++ {
-		fmt.Printf("%.*f ", precision, solVars[i])
+		fmt.Print(solVars[i], " ")
 	}
 
 	fmt.Println()
 
-	fmt.Printf("Maximum value of the objective function: %.*f\n", precision, table[m][n+m+1])
-
-
+	fmt.Println("Maximum value of the objective function: ", table[m][n+m+1])
 }
