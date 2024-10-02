@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math"
 )
-
-var eps float64 = 0.001
 
 
 func Solution(table [][]float64, n, m int) [][]float64 {
@@ -13,10 +12,9 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 	var minimum float64 = 1e10
 	var minimumIndex, minimumRatioIndex int
 	var flag bool = true
-	// var count int = 0
 
 	for flag {
-		// Step 1: Найти минимальный элемент в строке целевой функции (по Z)
+		// Finding minimum element by z row
 		minimum = 1e10
 		for i := 1; i < n+m+1; i++ {
 			if table[m][i] < minimum {
@@ -25,12 +23,13 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 			}
 		}
 
-		// Если минимальное значение больше или равно нулю, завершить
+		// Checking minimum value, if it's great or equal to 0, 
+		// then there are no negative values in z row, we can finish
 		if minimum >= 0 {
 			return table
 		}
 
-		// Step 2: Найти строку с минимальным положительным отношением
+		// Finding column and row with minimum value
 		minimumRatio = 1e10
 		for i := 0; i < m; i++ {
 			if table[i][minimumIndex] > 0 { // Мы можем делить только на положительные значения
@@ -42,43 +41,34 @@ func Solution(table [][]float64, n, m int) [][]float64 {
 			}
 		}
 
-		// Step 3: Найти разрешающий элемент
+		// Finding pivot element
 		pivotElement = table[minimumRatioIndex][minimumIndex]
 
+
+		// Changing indexes while moving variables
 		if minimumIndex <= n {
 			table[minimumRatioIndex][0] = float64(minimumIndex)
 		} else {
 			table[minimumRatioIndex][0] = float64(-(minimumIndex - n))
 		}
 	
-		// Step 4: Обновляем таблицу
+		// Change table
 
-		// 1. Обновляем строки, кроме разрешающей:
+		// Change all rows, except pivot row
 		for i := 0; i < m+1; i++ {
-			if i != minimumRatioIndex { // Не трогаем разрешающую строку
-				factor := table[i][minimumIndex] // элемент, который должен стать 0
+			if i != minimumRatioIndex { 
+				factor := table[i][minimumIndex] // element in the pivot column
 				for j := 1; j < n+m+2; j++ {
 					table[i][j] -= factor * table[minimumRatioIndex][j]/pivotElement
 				}
 			}
 		}
 
-		// 2. Нормализуем разрешающую строку (чтобы разрешающий элемент стал 1):
+		// Divide pivot row by pivot element
 		for i := 1; i < n+m+2; i++ {
 			table[minimumRatioIndex][i] /= pivotElement
 		}
 
-
-		// // Вывести текущую таблицу для отладки
-		// count++
-		// fmt.Printf("Iteration %d\n", count)
-		// for i := 0; i < m+1; i++ {
-		// 	for j := 1; j < n+m+3; j++ {
-		// 		fmt.Printf("%f ", table[i][j])
-		// 	}
-		// 	fmt.Println()
-		// }
-		// fmt.Println()
 	}
 	return table
 }
@@ -103,6 +93,16 @@ func main() {
 		table[i] = make([]float64, n+m+3)
 	}
 
+	for i := 0; i < n; i++ {
+		var temp int
+		_, err := fmt.Scan(&temp)
+		if err != nil {
+			fmt.Println("Wrong input for vector")
+			return
+		}
+		objCoeff[i] = float64(temp)
+	}
+
 	for i := 0; i < m; i++ {
 		for j := 0; j < n; j++ {
 			var temp int
@@ -122,19 +122,24 @@ func main() {
 			fmt.Println("Wrong input for const. function")
 			return
 		}
+		if temp < 0 {
+			fmt.Println("The method is not applicable!")
+			return
+		}
 		rhsCoeff[i] = float64(temp)
 	}
 
-	for i := 0; i < n; i++ {
-		var temp int
-		_, err := fmt.Scan(&temp)
-		if err != nil {
-			fmt.Println("Wrong input for vector")
-			return
-		}
-		objCoeff[i] = float64(temp)
+	var approx float64
+	_, err = fmt.Scan(&approx)
+	if err != nil {
+		fmt.Println("Wrong input for approximation")
+		return
 	}
-	// fullfiling indexes of the table
+
+	
+	precision := int(math.Log10(1 / approx))
+
+	// Fullfiling indexes of the table
 	for i := 0; i < m+1; i++ {
 		if i != m {
 			table[i][0] = float64(-(i + 1))
@@ -142,7 +147,7 @@ func main() {
 			table[i][0] = float64(0)
 		}
 	}
-	//fulfilling table
+	// Fulfilling table
 	for i := 0; i < m+1; i++ {
 		for j := 1; j < n+m+3; j++ {
 			if i < m && j <= n { // work with constraints
@@ -165,13 +170,6 @@ func main() {
 		}
 	}
 
-	// fmt.Println("Initial table:")
-	// for i := 0; i < m + 1; i++ {
-	// 	for j := 1; j < n+m+3; j++ {
-	// 		fmt.Print(table[i][j], " ")
-	// 	}
-	// }
-	// fmt.Println()
 
 	solVars := make([]float64, n)
 	for i := 0; i < n; i++ {
@@ -185,20 +183,14 @@ func main() {
 			solVars[int(table[i][0] - 1)] = table[i][n+m+1]
 		}
 	}
-	fmt.Print("Solution variables: ")
+	fmt.Print("Decision variables: ")
 	for i := 0; i < n; i++ {
-		fmt.Print(solVars[i], " ")
+		fmt.Printf("%.*f ", precision, solVars[i])
 	}
 
 	fmt.Println()
 
-	fmt.Println("Maximum value of the objective function:", table[m][n+m+1])
+	fmt.Printf("Maximum value of the objective function: %.*f\n", precision, table[m][n+m+1])
 
 
-	// fmt.Println("Table after last change")
-	// for i := 0; i < m; i++ {
-	// 	for j := 0; j < n+m+3; j++ {
-	// 		fmt.Print(table[i][j], " ")
-	// 	}
-	// }
 }
