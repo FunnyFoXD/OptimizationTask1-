@@ -5,18 +5,19 @@ import (
 	"math"
 )
 
-func Solution(table [][]float64, n, m int, approx float64) [][]float64 {
+func Solution(table [][]float64, n, m, m2 int, approx float64, solVars []float64, maxOrmin int) {
 	var pivotElement float64
 	var minimumRatio float64 = 1e10
 	var minimum float64 = 1e10
 	var minimumIndex, minimumRatioIndex int
 	var flag bool = true
 	var prevSol float64 = 1e10
+	var eps int = 3
 
 	for flag {
 		// Finding minimum element by z row
 		minimum = 1e10
-		for i := 1; i < n+m+1; i++ {
+		for i := 1; i < n+m2+1; i++ {
 			if table[m][i] < minimum {
 				minimum = table[m][i]
 				minimumIndex = i
@@ -26,21 +27,27 @@ func Solution(table [][]float64, n, m int, approx float64) [][]float64 {
 		// Checking minimum value, if it's great or equal to 0,
 		// then there are no negative values in z row, we can finish
 		if minimum >= 0 {
-			return table
+			break
 		}
 
+		var flag bool = false
 		// Finding column and row with minimum value
 		minimumRatio = 1e10
 		for i := 0; i < m; i++ {
-			if table[i][minimumIndex] > 0 { // Мы можем делить только на положительные значения
-				ratio := table[i][n+m+1] / table[i][minimumIndex]
+			if table[i][minimumIndex] > 0 { // We cav divide only by positive values
+				ratio := table[i][n+m2+1] / table[i][minimumIndex]
 				if ratio < minimumRatio {
 					minimumRatio = ratio
 					minimumRatioIndex = i
 				}
+				flag = true
 			}
 		}
 
+		if !flag {
+			fmt.Println("Problem is unbounded")
+			return
+		}
 		// Finding pivot element
 		pivotElement = table[minimumRatioIndex][minimumIndex]
 
@@ -57,30 +64,53 @@ func Solution(table [][]float64, n, m int, approx float64) [][]float64 {
 		for i := 0; i < m+1; i++ {
 			if i != minimumRatioIndex {
 				factor := table[i][minimumIndex] // element in the pivot column
-				for j := 1; j < n+m+2; j++ {
+				for j := 1; j < n+m2+2; j++ {
 					table[i][j] -= factor * table[minimumRatioIndex][j] / pivotElement
 				}
 			}
 		}
 
 		// Divide pivot row by pivot element
-		for i := 1; i < n+m+2; i++ {
+		for i := 1; i < n+m2+2; i++ {
 			table[minimumRatioIndex][i] /= pivotElement
 		}
 
 		// If solution changes by smaller value than approximation
-		if (math.Abs(prevSol - table[m][n+m+1])) < approx {
-			return table
+		if (math.Abs(prevSol - table[m][n+m2+1])) < approx {
+			break
 		}
-		prevSol = table[m][n+m+1]
+		prevSol = table[m][n+m2+1]
 	}
 
-	return table
+	for i := 0; i < m; i++ {
+		if table[i][0] > 0 {
+			solVars[int(table[i][0]-1)] = table[i][n+m2+1]
+		}
+	}
+	fmt.Print("Decision variables: ")
+	for i := 0; i < n; i++ {
+		fmt.Printf("%.*f ", eps, solVars[i])
+	}
+
+	fmt.Println()
+
+	if maxOrmin == 0 {
+		fmt.Printf("Maximum value of the objective function: %.*f ", eps, table[m][n+m2+1])
+	} else {
+		fmt.Printf("Minimum value of the objective function: %.*f ", eps, (-1)*table[m][n+m2+1])
+	}
 }
 
 func main() {
+	var maxOrmin int // 0- maximization, 1- minimization
+	_, err := fmt.Scan(&maxOrmin)
+	if err != nil {
+		fmt.Println("Wrong input")
+		return
+	}
+
 	var n, m int
-	_, err := fmt.Scan(&n, &m)
+	_, err = fmt.Scan(&n, &m)
 	if err != nil {
 		fmt.Println("Wrong input")
 		return
@@ -92,10 +122,6 @@ func main() {
 	table := make([][]float64, m+1)
 	for i := range constCoeff {
 		constCoeff[i] = make([]float64, n)
-	}
-
-	for i := range table {
-		table[i] = make([]float64, n+m+3)
 	}
 
 	for i := 0; i < n; i++ {
@@ -141,32 +167,54 @@ func main() {
 		return
 	}
 
-	// Fullfiling indexes of the table
-	for i := 0; i < m+1; i++ {
-		if i != m {
-			table[i][0] = float64(-(i + 1))
-		} else {
-			table[i][0] = float64(0)
+	extras := make([]int, m)
+	m2 := m
+	for i := 0; i < m; i++ {
+		for j := 0; j < n; j++ {
+			if objCoeff[j] == 0 && constCoeff[i][j] == 1 {
+				extras[i] = j
+				m2 -= 1
+			}
 		}
 	}
+
+	for i := range table {
+		table[i] = make([]float64, n+m2+3)
+	}
+
+	// Fullfiling indexes of the table
+	for i := 0; i < m; i++ {
+		if extras[i] == 0 {
+			table[i][0] = float64(-(i + 1))
+		} else {
+			table[i][0] = float64(extras[i] + 1)
+		}
+	}
+
+	table[m][0] = float64(0)
+
 	// Fulfilling table
 	for i := 0; i < m+1; i++ {
-		for j := 1; j < n+m+3; j++ {
+		for j := 1; j < n+m2+3; j++ {
 			if i < m && j <= n { // work with constraints
 				table[i][j] = constCoeff[i][j-1]
-			} else if i == m && j <= n { // work with objCoeff
-				table[i][j] = float64((-1) * objCoeff[j-1])
-			} else if i < m && j == n+m+1 { // work with rhsCoeff
+			} else if i == m && j <= n {
+				if maxOrmin == 0 {
+					table[i][j] = float64((-1) * objCoeff[j-1])
+				} else {
+					table[i][j] = float64(objCoeff[j-1])
+				}
+			} else if i < m && j == n+m2+1 { // work with rhsCoeff
 				table[i][j] = rhsCoeff[i]
-			} else if j == n+m+2 { // work with ratio
+			} else if j == n+m2+2 { // work with ratio
 				table[i][j] = float64(0)
-			} else if i < m && j > n && j <= n+m { //work with s1, s2 ...
+			} else if i < m && j > n && j <= n+m2 && m2 != 0 { //work with s1, s2 ...
 				if j == n+i+1 {
 					table[i][j] = float64(1)
 				} else {
 					table[i][j] = float64(0)
 				}
-			} else if i == m && j > n { // work with s1, s2 .. and rhs of z
+			} else if i == m && j > n && m2 != 0 { // work with s1, s2 .. and rhs of z
 				table[i][j] = float64(0)
 			}
 		}
@@ -177,19 +225,5 @@ func main() {
 		solVars[i] = 0
 	}
 
-	table = Solution(table, n, m, approx)
-
-	for i := 0; i < m; i++ {
-		if table[i][0] > 0 {
-			solVars[int(table[i][0]-1)] = table[i][n+m+1]
-		}
-	}
-	fmt.Print("Decision variables: ")
-	for i := 0; i < n; i++ {
-		fmt.Print(solVars[i], " ")
-	}
-
-	fmt.Println()
-
-	fmt.Println("Maximum value of the objective function: ", table[m][n+m+1])
+	Solution(table, n, m, m2, approx, solVars, maxOrmin)
 }
