@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-func Solution(table [][]float64, n, m, m2 int, approx float64, solVars []float64, maxOrmin int) {
+func Solution(table [][]float64, n, m, m2 int, approx float64, solVars []float64, maxOrMin int) {
 	var pivotElement float64
 	var minimumRatio float64 = 1e10
 	var minimum float64 = 1e10
@@ -94,7 +94,7 @@ func Solution(table [][]float64, n, m, m2 int, approx float64, solVars []float64
 
 	fmt.Println()
 
-	if maxOrmin == 0 {
+	if maxOrMin == 0 {
 		fmt.Printf("Maximum value of the objective function: %.*f ", eps, table[m][n+m2+1])
 	} else {
 		fmt.Printf("Minimum value of the objective function: %.*f ", eps, (-1)*table[m][n+m2+1])
@@ -102,17 +102,19 @@ func Solution(table [][]float64, n, m, m2 int, approx float64, solVars []float64
 }
 
 func main() {
-	var maxOrmin int // 0- maximization, 1- minimization
-	_, err := fmt.Scan(&maxOrmin)
-	if err != nil {
-		fmt.Println("Wrong input")
+	var maxOrMin int // 0- maximization, 1- minimization
+	fmt.Println("Choose problem: 0 - maximization, 1 - minimization:")
+	_, err := fmt.Scan(&maxOrMin)
+	if err != nil || (maxOrMin != 0 && maxOrMin != 1) {
+		fmt.Println("Wrong input for choosing problem!")
 		return
 	}
 
 	var n, m int
+	fmt.Println("Enter number of variables and constraints:")
 	_, err = fmt.Scan(&n, &m)
 	if err != nil {
-		fmt.Println("Wrong input")
+		fmt.Println("Wrong input for number of variables or constraints!")
 		return
 	}
 
@@ -120,37 +122,41 @@ func main() {
 	rhsCoeff := make([]float64, m)
 	constCoeff := make([][]float64, m)
 	table := make([][]float64, m+1)
+
 	for i := range constCoeff {
 		constCoeff[i] = make([]float64, n)
 	}
 
+	fmt.Println("Enter objective function coefficients:")
 	for i := 0; i < n; i++ {
 		var temp int
 		_, err := fmt.Scan(&temp)
 		if err != nil {
-			fmt.Println("Wrong input for vector")
+			fmt.Println("Wrong input for objective function!")
 			return
 		}
 		objCoeff[i] = float64(temp)
 	}
 
+	fmt.Println("Enter constraints coefficients:")
 	for i := 0; i < m; i++ {
 		for j := 0; j < n; j++ {
 			var temp int
 			_, err := fmt.Scan(&temp)
 			if err != nil {
-				fmt.Println("Wrong input for obj. function")
+				fmt.Println("Wrong input for constraint function!")
 				return
 			}
 			constCoeff[i][j] = float64(temp)
 		}
 	}
 
+	fmt.Println("Enter right hand side coefficients:")
 	for i := 0; i < m; i++ {
 		var temp int
 		_, err := fmt.Scan(&temp)
 		if err != nil {
-			fmt.Println("Wrong input for const. function")
+			fmt.Println("Wrong input for vector!")
 			return
 		}
 		if temp < 0 {
@@ -161,9 +167,10 @@ func main() {
 	}
 
 	var approx float64
+	fmt.Println("Enter approximation(eps):")
 	_, err = fmt.Scan(&approx)
 	if err != nil {
-		fmt.Println("Wrong input for approximation")
+		fmt.Println("Wrong input for approximation!")
 		return
 	}
 
@@ -199,7 +206,7 @@ func main() {
 			if i < m && j <= n { // work with constraints
 				table[i][j] = constCoeff[i][j-1]
 			} else if i == m && j <= n {
-				if maxOrmin == 0 {
+				if maxOrMin == 0 {
 					table[i][j] = float64((-1) * objCoeff[j-1])
 				} else {
 					table[i][j] = float64(objCoeff[j-1])
@@ -225,5 +232,5 @@ func main() {
 		solVars[i] = 0
 	}
 
-	Solution(table, n, m, m2, approx, solVars, maxOrmin)
+	Solution(table, n, m, m2, approx, solVars, maxOrMin)
 }
