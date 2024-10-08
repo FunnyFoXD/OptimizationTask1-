@@ -30,7 +30,7 @@ func Solution(table [][]float64, n, m, m2 int, approx float64, solVars []float64
 			break
 		}
 
-		var flag bool = false
+		flag = false
 		// Finding column and row with minimum value
 		minimumRatio = 1e10
 		for i := 0; i < m; i++ {
